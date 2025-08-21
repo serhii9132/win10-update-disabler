@@ -126,27 +126,28 @@ function DisableScheduledTaskUpdate {
     Disables specific scheduled tasks related to Windows Update.
     #>
 
-    $Task_List = @(
+    $Target_Task_List = @(
         # \Microsoft\Windows\WindowsUpdate
         'Scheduled Start'
         # \Microsoft\Windows\UpdateOrchestrator
         'Report policies'
         'Schedule Scan'
         'Schedule Scan Static Task'
-        #'Schedule Work'
+        'Schedule Work'
         'UpdateModelTask'
         'USO_UxBroker'
         # \Microsoft\Windows\WaaSMedic
         'PerformRemediation'
     )
 
-    [string]$Result, [string]$Log_Message = ''
+    $Existing_Tasks = Get-ScheduledTask | Where-Object { $_.TaskName -in $Target_Task_List } | Select-Object -ExpandProperty TaskName
+    [string]$Task_Path, [string]$Log_Message = ''
     
-    foreach ($Item in $Task_List) {
-        $Result = Get-ScheduledTask -TaskName $Item | Where-Object -Property State -eq "Ready" | Select-Object -ExpandProperty TaskPath 
-        if($Result){
-            $Log_Message += (-join("The task ", $Item, " (Path = ", $Result, ") has a status 'Ready'.", "Changing status to 'Disabled'.`n"))
-            Disable-ScheduledTask -TaskPath $Result -TaskName $Item | Out-Null
+    foreach ($Task in $Existing_Tasks) {
+        $Task_Path = Get-ScheduledTask -TaskName $Task | Where-Object -Property State -eq "Ready" | Select-Object -ExpandProperty TaskPath 
+        if($Task_Path){
+            $Log_Message += (-join("The task ", $Task, " (Path = ", $Task_Path, ") has a status 'Ready'.", "Changing status to 'Disabled'.`n"))
+            Disable-ScheduledTask -TaskPath $Task_Path -TaskName $Task | Out-Null
         }
     }
     
