@@ -25,15 +25,20 @@ function EditGroupPolicyUpdateViaRegistry {
 }
 
 function ShutDownScheduledTaskDisablerUpdate {
-    [string]$Name_Task = 'Disable updates'
-    [string]$Task_Path = Get-ScheduledTask -TaskName $Name_Task | Where-Object -Property State -eq "Ready" | Select-Object -ExpandProperty TaskPath
-    
-    Disable-ScheduledTask -TaskPath $Task_Path -TaskName $Name_Task | Out-Null
-    WriteInfoToEventLog "Disabling the scheduled task for turning off Windows updates"
+    [string]$Task_Name = 'Disable updates'
+    [string]$Is_Task_Exist = Get-ScheduledTask | Where-Object { $_.TaskName -eq $Task_Name } 
+
+    if ($Is_Task_Exist){
+        $Task_Path = Get-ScheduledTask -TaskName $Task_Name | Where-Object -Property State -eq "Ready" | Select-Object -ExpandProperty TaskPath
+        if($Task_Path){
+            Disable-ScheduledTask -TaskPath $Task_Path -TaskName $Task_Name | Out-Null
+            WriteInfoToEventLog "Disabling the scheduled task for turning off Windows updates"
+        }
+    }
 }
 
 function EnableScheduledTaskUpdate {
-    $Task_List = @(
+    $Target_Task_List = @(
         # \Microsoft\Windows\WindowsUpdate
         'Scheduled Start'
         # \Microsoft\Windows\UpdateOrchestrator
@@ -47,13 +52,14 @@ function EnableScheduledTaskUpdate {
         'PerformRemediation'
     )
 
-    [string]$Result, [string]$Log_Message = ''
+    $Existing_Tasks = Get-ScheduledTask | Where-Object { $_.TaskName -in $Target_Task_List } | Select-Object -ExpandProperty TaskName
+    [string]$Task_Path, [string]$Log_Message = ''
     
-    foreach ($Item in $Task_List) {
-        $Result = Get-ScheduledTask -TaskName $Item | Where-Object -Property State -eq "Disabled" | Select-Object -ExpandProperty TaskPath 
-        if($Result){
-            $Log_Message += (-join("The task ", $Item, " (Path = ", $Result, ") has a status 'Disabled'.", "Changing status to 'Ready'.`n"))
-            Enable-ScheduledTask -TaskPath $Result -TaskName $Item | Out-Null
+    foreach ($Task in $Existing_Tasks) {
+        $Task_Path = Get-ScheduledTask -TaskName $Task | Where-Object -Property State -eq "Disabled" | Select-Object -ExpandProperty TaskPath 
+        if($Task_Path){
+            $Log_Message += (-join("The task ", $Task, " (Path = ", $Task_Path, ") has a status 'Disabled'.", "Changing status to 'Ready'.`n"))
+            Enable-ScheduledTask -TaskPath $Task_Path -TaskName $Task | Out-Null
         }
     }
     
