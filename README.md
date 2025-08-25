@@ -53,7 +53,7 @@ Tab 'Actions':
 Put PsExec.exe to 'reset' folder and run init_enabler.bat with admin privileges.
 
 # Notes
-The utility is still in BETA and undergoing testing. It has been tested and confirmed to work on the Windows 10 LTSC (21H2) operating system, which is used as both the host and guest on VirtualBox.
+The utility is still in BETA and undergoing testing. It has been tested and confirmed to work on the Windows 10 LTSC (21H2) and Windows Server 2022.
 
 # License
 MIT
